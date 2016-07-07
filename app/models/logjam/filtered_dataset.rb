@@ -13,21 +13,18 @@ module Logjam
       :time_range => 'date', :auto_refresh => '0'}
 
     def self.is_default?(attribute, value)
-      DEFAULTS.keys.include?(attribute.to_sym) && DEFAULTS[attribute.to_sym].to_s == value
+      DEFAULTS.keys.include?(attribute.to_sym) && DEFAULTS[attribute.to_sym].to_s == value.to_s
     end
 
-    def self.clean_url_params(params, old_params)
-      default_app = params.delete(:default_app) || Logjam.default_app
-      params = params.reject{|k,v| old_params[k] == v && (v.blank? || is_default?(k, v)) }
+    def self.clean_url_params(params)
+      default_app = params.delete(:default_app)
+      default_env = params.delete(:default_env)
+      params = params.reject { |k,v| is_default?(k, v) }
       if app = params[:app]
         params.delete(:app) if app == default_app
-        if env = params[:env]
-          if default_env = params.delete(:default_env)
-            params.delete(:env) if env == default_env
-          else
-            params.delete(:env) if env == Logjam.default_env(app)
-          end
-        end
+      end
+      if env = params[:env]
+        params.delete(:env) if env == default_env
       end
       params
     end

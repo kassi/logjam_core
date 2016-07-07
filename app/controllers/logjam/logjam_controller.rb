@@ -3,6 +3,7 @@ require 'csv'
 module Logjam
 
   class LogjamController < ApplicationController
+    before_action :permit_all_parameters
     before_action :verify_date
     before_action :redirect_to_clean_url, :except => [:live_stream, :auto_complete_for_controller_action_page]
     before_action :verify_app_env, :except => [:call_relationships, :call_graph]
@@ -716,7 +717,7 @@ module Logjam
       @section = params[:section] == "frontend" ? :frontend : :backend
 
       if @section == :frontend && !(Resource.frontend_resources.include?(params[:resource]) || Resource.dom_resources.include?(params[:resource]))
-        redirect_to params.to_hash.merge(:resource => 'page_time', :section => 'frontend')
+        redirect_to params.to_unsafe_h.merge(:resource => 'page_time', :section => 'frontend')
         return false
       elsif @section == :backend && !Resource.backend_resources.include?(params[:resource])
         redirect_to params.to_hash.merge(:resource => 'total_time', :section => 'backend')
@@ -752,9 +753,9 @@ module Logjam
       logger.debug "DATASET BE EMTPTY = #{@dataset.empty?}"
       if @dataset.empty?
         if !@dataset.top_level? && !request.referer.to_s.include?("app=#{@app}")
-          new_params = FilteredDataset.clean_url_params(params.merge(:page => '',
+          new_params = FilteredDataset.clean_url_params(params.to_h.merge(:page => '',
                                                                      :default_app => @default_app,
-                                                                     :default_env => @default_env), params)
+                                                                     :default_env => @default_env))
           redirect_to new_params.to_hash
         else
           render "empty_dataset"
@@ -771,7 +772,7 @@ module Logjam
     def redirect_to_clean_url
       return if request.format.to_s =~ /json/
       get_app_env
-      py, pm, pd = params.values_at(:year, :month, :day).map(&:to_i)
+      py, pm, pd = params.to_h.values_at(:year, :month, :day).map(&:to_i)
       dd = default_date
       selected_date = dd.to_s(:db) if params[:auto_refresh] == "1" && (dd.year != py || dd.month != pm || dd.day != pd)
       selected_date ||= dd.to_s(:db) unless (params[:year] && params[:month] && params[:day])
@@ -787,9 +788,13 @@ module Logjam
           :resource => params[:resource],
           :sort => params[:sort], :group => params[:group], :filter => params[:filter],
           :offset => params[:offset], :error_type => params[:error_type],
-          :grouping => params[:grouping], :grouping_function => params[:grouping_function]}, params)
+          :grouping => params[:grouping], :grouping_function => params[:grouping_function]})
         redirect_to new_params
       end
+    end
+
+    def permit_all_parameters
+      params.permit!
     end
 
     def print_params

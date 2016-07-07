@@ -29,10 +29,10 @@ module Logjam
     end
 
     def default_header_parameters
-      FilteredDataset::DEFAULTS.merge(:time_range => 'date', :auto_refresh => '0')
+      FilteredDataset::DEFAULTS
     end
 
-    def date_to_params(date)
+    def date_to_params(date=Date.today)
       {
         :day => sprintf("%02d", date.day),
         :month => sprintf("%02d", date.month),
@@ -41,23 +41,23 @@ module Logjam
     end
 
     def home_url
-      url_for(params.except(:id).merge(:action => ''))
+      url_for(date_to_params.merge(params.except(:id).merge(:action => "index"))).sub('/index','')
     end
 
     def history_url
-      url_for(params.except(:id).merge(:action => 'history'))
+      url_for(date_to_params.merge(params.except(:id).merge(:action => 'history')))
     end
 
     def self_url
-      url_for(params.merge(:action => (action_name == "index" ? "" : action_name)))
+      url_for(date_to_params.merge(params.merge(:action => action_name))).sub('/index','')
     end
 
     def auto_complete_url_for_action_page
-      url_for(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_controller_action_page", :format => :json))
+      url_for(date_to_params.merge(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_controller_action_page", :format => :json)))
     end
 
     def auto_complete_url_for_application_page
-      url_for(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_applications_page", :format => :json))
+      url_for(date_to_params.merge(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_applications_page", :format => :json)))
     end
 
     def collected_frontend_time_resources
@@ -191,34 +191,37 @@ module Logjam
     end
 
     def clean_params(params)
-      params = params.merge(:default_app => @default_app, :default_env => @default_app)
-      FilteredDataset.clean_url_params(params, self.params)
+      params = params.to_h.merge(:default_app => @default_app, :default_env => @default_app)
+      FilteredDataset.clean_url_params(params)
     end
 
     def clean_link_to(*args, &block)
       if block_given?
         options      = args[0] || {}
         html_options = args[1]
-        cleaned_options = clean_params(params.merge(options))
-        clean_link_to(capture(&block), cleaned_options, html_options)
+        clean_link_to(capture(&block), options, html_options)
       else
         name         = args[0]
         options      = args[1] || {}
         html_options = args[2]
-        cleaned_options = clean_params(params.merge(options))
-        link_to(name, cleaned_options, html_options)
+        cleaned_url = clean_url_for(params.to_h.merge(options))
+        link_to(name, cleaned_url, html_options)
       end
     end
 
     def clean_url_for(options)
-      url_for(clean_params(params.merge(options)))
+      params = clean_params(params.to_h.merge(options))
+      url = url_for(params)
+      # logger.debug "cleaning url: #{url} : #{params.inspect}"
+      url = url.sub('/index', '') if params[:action].blank? || params[:action].to_sym == :index
+      url
     end
 
     def sometimes_link_grouping_result(result, grouping, params)
       value = result.send(grouping)
       ppage = params[:page]
       if grouping.to_sym == :page && ppage !~ /\AOthers/ && (ppage != @page || ppage =~ /^::/)
-        params = params.merge(grouping => value)
+        params = params.to_h.merge(grouping => value)
         params[:page] = without_module(ppage) # unless @page == "::"
         params[:action] = "index"
         _scope, action = value.split('#')
@@ -310,9 +313,9 @@ module Logjam
       else
         params = { :app => @app, :env => @env, :action => "errors", :page => without_module(page.page) }
         errors = error_count == 0 ? error_count :
-          clean_link_to(integer_number(error_count), params.merge(:error_type => "logged_error"), :class => "error data-tooltip-bottom-nose-right", :"data-tooltip" => "show errors")
+          clean_link_to(integer_number(error_count), params.to_h.merge(:error_type => "logged_error"), :class => "error data-tooltip-bottom-nose-right", :"data-tooltip" => "show errors")
         warnings = warning_count == 0 ? warning_count :
-          clean_link_to(integer_number(warning_count), params.merge(:error_type => "logged_warning"), :class => "warn data-tooltip-bottom-nose-right", :"data-tooltip" => "show warnings")
+          clean_link_to(integer_number(warning_count), params.to_h.merge(:error_type => "logged_warning"), :class => "warn data-tooltip-bottom-nose-right", :"data-tooltip" => "show warnings")
         raw "#{errors}/#{warnings}"
       end
     end
@@ -500,7 +503,7 @@ module Logjam
 
     def severity_icon(severity, params = {})
       img = format_severity(severity).downcase
-      image_tag("#{img}.svg", params.reverse_merge(:class => "lj-ico", :title => "log severity: #{img}"))
+      image_tag("#{img}.svg", params.to_h.reverse_merge(:class => "lj-ico", :title => "log severity: #{img}"))
     end
 
     def extract_error(log_lines, exception)

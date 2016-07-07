@@ -16,7 +16,7 @@
           <span>Filter:</span>
           <%= text_field_tag 'filter', params[:filter], :size => 30 %>
         <% end %>
-        <%= form_tag(params.merge(:action => "call_graph"), :method => :get) do %>
+        <%= form_tag(params.to_h.merge(:action => "call_graph"), :method => :get) do %>
           <%= hidden_field_tag :app, @app %>
           <%= hidden_field_tag :env, @env %>
           <%= hidden_field_tag :page, @page %>
@@ -25,7 +25,7 @@
           <%= hidden_field_tag :filter, params[:filter], :id => "graph-filter" %>
           <%= submit_tag "Graph it!", :id => "graph-button", :name => nil, :class => "btn" %>
         <% end %>
-        <%= form_tag(params.merge(:format => :csv), :method => :get) do %>
+        <%= form_tag(params.to_h.merge(:format => :csv), :method => :get) do %>
           <%= hidden_field_tag :app, @app %>
           <%= hidden_field_tag :env, @env %>
           <%= hidden_field_tag :page, @page %>

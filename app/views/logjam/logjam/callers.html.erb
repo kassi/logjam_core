@@ -42,7 +42,7 @@
           <tbody>
             <% @callers.each_with_index do |(caller, count), i| %>
               <% app, controller = caller.split('-') %>
-              <% url = url_for(params.merge(:app => app, :page => controller)) unless controller.blank? %>
+              <% url = url_for(params.to_h.merge(:app => app, :page => controller)) unless controller.blank? %>
               <tr>
                 <td><%= app %></td>
                 <td><%= link_to(controller, url) unless controller.blank? %></td>
