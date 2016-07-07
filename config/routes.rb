@@ -12,7 +12,6 @@ Rails.application.routes.draw do
        call_graph
        call_relationships
        callers
-       database_information
        enlarged_plot
        error_overview
        errors
@@ -31,6 +30,8 @@ Rails.application.routes.draw do
     ).each do |action|
       get "/:year/:month/:day/#{action}(/:id)", :year => /\d\d\d\d/, :month => /\d\d/, :day => /\d\d/, :action => action
     end
+
+    get "/database_information" => :database_information
 
     get "/:year/:month/:day(/index(/:id))", :year => /\d\d\d\d/, :month => /\d\d/, :day => /\d\d/, :action => "index"
 
