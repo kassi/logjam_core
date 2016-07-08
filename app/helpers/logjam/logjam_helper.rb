@@ -41,23 +41,25 @@ module Logjam
     end
 
     def home_url
-      url_for(date_to_params.merge(params.except(:id).merge(:action => "index"))).sub('/index','')
+      url_for(params.to_h.reverse_merge(date_to_params).except(:id).merge(:action => "index")).sub('/index','')
     end
 
     def history_url
-      url_for(date_to_params.merge(params.except(:id).merge(:action => 'history')))
+      url_for(params.to_h.reverse_merge(date_to_params).except(:id).merge(:action => 'history'))
     end
 
     def self_url
-      url_for(date_to_params.merge(params.merge(:action => action_name))).sub('/index','')
+      url_for(params.to_h.reverse_merge(date_to_params).merge(:action => action_name)).sub('/index','')
     end
 
     def auto_complete_url_for_action_page
-      url_for(date_to_params.merge(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_controller_action_page", :format => :json)))
+      url_for(params.to_h.reverse_merge(date_to_params).slice(:year, :month, :day, :app, :env)
+               .merge(:action => "auto_complete_for_controller_action_page", :format => :json))
     end
 
     def auto_complete_url_for_application_page
-      url_for(date_to_params.merge(params.slice(:year, :month, :day, :app, :env).merge(:action => "auto_complete_for_applications_page", :format => :json)))
+      url_for(params.to_h.reverse_merge(date_to_params).slice(:year, :month, :day, :app, :env)
+               .merge(:action => "auto_complete_for_applications_page", :format => :json))
     end
 
     def collected_frontend_time_resources
@@ -210,7 +212,7 @@ module Logjam
     end
 
     def clean_url_for(options)
-      params = clean_params(params.to_h.merge(options))
+      params = clean_params(params.to_h.merge(options.to_h))
       url = url_for(params)
       # logger.debug "cleaning url: #{url} : #{params.inspect}"
       url = url.sub('/index', '') if params[:action].blank? || params[:action].to_sym == :index

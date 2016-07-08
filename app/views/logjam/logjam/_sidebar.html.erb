@@ -2,7 +2,7 @@
 
 <section id="logjam-sidebar" class="open">
 
-  <% url = clean_url_for(params.except(:id).merge(:action => action_name)) %>
+  <% url = clean_url_for(params.to_h.except(:id).merge(:action => action_name)) %>
   <%= form_tag(url, :method => :get, :id => "filter-form", :autocomplete => "off") do -%>
 
   <div class="menu-wrapper">
